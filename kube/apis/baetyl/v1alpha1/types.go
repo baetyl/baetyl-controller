@@ -5,32 +5,32 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Node
+// Cluster
 
 // +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Node customize baetyl node resource definition.
-// Each node corresponds to an edge node or edge cluster.
-type Node struct {
+// Cluster customize baetyl node resource definition.
+// Each cluster corresponds to an edge node or edge cluster.
+type Cluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              NodeSpec `json:"spec,omitempty"`
+	Spec              ClusterSpec `json:"spec,omitempty"`
 }
 
-type NodeSpec struct {
+type ClusterSpec struct {
 	CoreSpec     `json:",inline"`
 	UserSpec     `json:",inline"`
-	TemplateRef  *corev1.LocalObjectReference `json:"templateRef,omitempty"`
-	ApplyRef     *corev1.LocalObjectReference `json:"applyRef,omitempty"`
-	Attributes   map[string]string            `json:"attributes,omitempty"`
-	OptionalApps []string                     `json:"optionalApp,omitempty"`
-	Accelerator  string                       `json:"accelerator,omitempty"`
-	IsCluster    bool                         `json:"isCluster,omitempty"`
-	SyncMode     string                       `json:"syncMode,omitempty"`
-	NodeMode     string                       `json:"nodeMode,omitempty"`
-	Description  string                       `json:"description,omitempty"`
+	TemplateRef  *corev1.ObjectReference `json:"templateRef,omitempty"`
+	ApplyRef     *corev1.ObjectReference `json:"applyRef,omitempty"`
+	Attributes   map[string]string       `json:"attributes,omitempty"`
+	OptionalApps []string                `json:"optionalApp,omitempty"`
+	Accelerator  string                  `json:"accelerator,omitempty"`
+	IsCluster    bool                    `json:"isCluster,omitempty"`
+	SyncMode     string                  `json:"syncMode,omitempty"`
+	NodeMode     string                  `json:"nodeMode,omitempty"`
+	Description  string                  `json:"description,omitempty"`
 }
 
 type CoreSpec struct {
@@ -50,11 +50,11 @@ type UserSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type NodeList struct {
+type ClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Node `json:"items"`
+	Items           []Cluster `json:"items"`
 }
 
 // Template
@@ -72,8 +72,10 @@ type Template struct {
 
 type TemplateSpec struct {
 	UserSpec    `json:",inline"`
-	Data        map[string]string `json:"data,omitempty"`
-	Description string            `json:"description,omitempty"`
+	ClusterRef  *corev1.LocalObjectReference `json:"clusterRef,omitempty"`
+	ApplyRef    *corev1.LocalObjectReference `json:"applyRef,omitempty"`
+	Data        map[string]string            `json:"data,omitempty"`
+	Description string                       `json:"description,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -99,14 +101,15 @@ type Apply struct {
 }
 
 type ApplySpec struct {
-	UserSpec    `json:",inline"`
-	TemplateRef *corev1.LocalObjectReference `json:"templateRef,omitempty"`
-	ApplyValues []ApplyValues                `json:"applyValues,omitempty"`
-	Description string                       `json:"description,omitempty"`
+	UserSpec     `json:",inline"`
+	ClusterRef   *corev1.LocalObjectReference `json:"clusterRef,omitempty"`
+	TemplatesRef *corev1.LocalObjectReference `json:"templatesRef,omitempty"`
+	ApplyValues  []ApplyValues                `json:"applyValues,omitempty"`
+	Description  string                       `json:"description,omitempty"`
 }
 
 type ApplyValues struct {
-	Key         string            `json:"key,omitempty"`
+	Name        string            `json:"name,omitempty"`
 	Values      map[string]string `json:"values,omitempty"`
 	ExpectTime  int64             `json:"expectTime,omitempty"`
 	Description string            `json:"description,omitempty"`

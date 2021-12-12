@@ -26,8 +26,8 @@ import (
 type Interface interface {
 	// Applies returns a ApplyInformer.
 	Applies() ApplyInformer
-	// Nodes returns a NodeInformer.
-	Nodes() NodeInformer
+	// Clusters returns a ClusterInformer.
+	Clusters() ClusterInformer
 	// Templates returns a TemplateInformer.
 	Templates() TemplateInformer
 }
@@ -48,9 +48,9 @@ func (v *version) Applies() ApplyInformer {
 	return &applyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Nodes returns a NodeInformer.
-func (v *version) Nodes() NodeInformer {
-	return &nodeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Clusters returns a ClusterInformer.
+func (v *version) Clusters() ClusterInformer {
+	return &clusterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Templates returns a TemplateInformer.

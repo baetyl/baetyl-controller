@@ -6,8 +6,8 @@ import (
 	"time"
 
 	coreV1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeInformers "k8s.io/client-go/informers"
@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
+	"github.com/baetyl/baetyl-controller/kube/apis/baetyl/v1alpha1"
 	clientSet "github.com/baetyl/baetyl-controller/kube/client/clientset/versioned"
 	customScheme "github.com/baetyl/baetyl-controller/kube/client/clientset/versioned/scheme"
 	customInformer "github.com/baetyl/baetyl-controller/kube/client/informers/externalversions"
@@ -31,10 +32,10 @@ const (
 	ControllerAgentNameTemplate = "template-controller"
 	TemplateKind                = "Template"
 
-	SuccessSynced         = "Synced"
-	ErrResourceExists     = "ErrResourceExists"
-	MessageTemplateSynced = "Template synced successfully"
-	MessageTemplateExists = "Resource %q already exists and is not managed by Template"
+	TemplateSuccessSynced     = "TemplateSynced"
+	ErrTemplateResourceExists = "ErrTemplateResourceExists"
+	MessageTemplateSynced     = "Template synced successfully"
+	MessageTemplateExists     = "Resource %q already exists and is not managed by Template"
 )
 
 type TemplateClient struct {
@@ -209,32 +210,31 @@ func (c *TemplateClient) processNextWorkItem() bool {
 // resource with the current status of the resource.
 func (c *TemplateClient) syncHandler(key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
-	ns, n, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		utilRuntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return nil
-	}
-	tpl, err := c.templateListener.Templates(ns).Get(n)
-	if err != nil {
-		// The Template resource may no longer exist, in which case we stop
-		// processing.
-		if errors.IsNotFound(err) {
-			utilRuntime.HandleError(fmt.Errorf("Template '%s' in work queue no longer exists", key))
-			return nil
-		}
-		return err
-	}
-
-	// TODO 获取到 template 实例后的业务逻辑
-	klog.Info("template instance name:", tpl.Name, " ,version:", tpl.ObjectMeta.ResourceVersion)
-
-	// update template instance
-	_, err = c.customClient.BaetylV1alpha1().Templates(tpl.Namespace).Update(c.ctx, tpl.DeepCopy(), metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	c.recorder.Event(tpl, coreV1.EventTypeNormal, SuccessSynced, MessageTemplateSynced)
+	//ns, n, err := cache.SplitMetaNamespaceKey(key)
+	//if err != nil {
+	//	utilRuntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+	//	return nil
+	//}
+	//tpl, err := c.templateListener.Templates(ns).Get(n)
+	//if err != nil {
+	//	// The Template resource may no longer exist, in which case we stop
+	//	// processing.
+	//	if apiErrors.IsNotFound(err) {
+	//		utilRuntime.HandleError(fmt.Errorf("Template '%s' in work queue no longer exists", key))
+	//		return nil
+	//	}
+	//	return err
+	//}
+	//
+	//klog.Info("template instance name:", tpl.Name, " ,version:", tpl.ObjectMeta.ResourceVersion)
+	//
+	//// update template instance
+	//_, err = c.customClient.BaetylV1alpha1().Templates(tpl.Namespace).Update(c.ctx, tpl.DeepCopy(), metaV1.UpdateOptions{})
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//c.recorder.Event(tpl, coreV1.EventTypeNormal, SuccessSynced, MessageTemplateSynced)
 	return nil
 }
 
@@ -252,4 +252,24 @@ func (c *TemplateClient) enqueueTemplate(obj interface{}) {
 		return
 	}
 	c.workqueue.Add(key)
+}
+
+func (c *TemplateClient) CreateTemplate(tpl *v1alpha1.Template) (*v1alpha1.Template, error) {
+	return c.customClient.BaetylV1alpha1().Templates(tpl.Namespace).Create(c.ctx, tpl, metaV1.CreateOptions{})
+}
+
+func (c *TemplateClient) GetTemplate(ns, name string) (*v1alpha1.Template, error) {
+	return c.templateListener.Templates(ns).Get(name)
+}
+
+func (c *TemplateClient) UpdateTemplate(tpl *v1alpha1.Template) (*v1alpha1.Template, error) {
+	return c.customClient.BaetylV1alpha1().Templates(tpl.Namespace).Update(c.ctx, tpl, metaV1.UpdateOptions{})
+}
+
+func (c *TemplateClient) DeleteTemplate(ns, name string) error {
+	return c.customClient.BaetylV1alpha1().Templates(ns).Delete(c.ctx, name, metaV1.DeleteOptions{})
+}
+
+func (c *TemplateClient) ListTemplates(ns string, selector labels.Selector) ([]*v1alpha1.Template, error) {
+	return c.templateListener.Templates(ns).List(selector)
 }

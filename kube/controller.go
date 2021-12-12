@@ -2,10 +2,14 @@ package kube
 
 import (
 	"context"
+	"fmt"
 
 	"gopkg.in/tomb.v2"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilRuntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
@@ -62,11 +66,22 @@ func NewController(ctx context.Context, path string) (*Client, error) {
 
 	// TODO optimization
 	controllers := map[string]Controller{}
-	tpl, err := NewTemplateClient(ctx, kubeClient, customClient, DefaultThreadiness, signals.SetupSignalHandler())
+	tpl, err := NewTemplateClient(ctx, kubeClient, customClient, DefaultThreadiness, signals.NewSignals().SetupSignalHandler())
 	if err != nil {
 		return nil, err
 	}
+	aly, err := NewApplyClient(ctx, kubeClient, customClient, DefaultThreadiness, signals.NewSignals().SetupSignalHandler())
+	if err != nil {
+		return nil, err
+	}
+	clt, err := NewClusterClient(ctx, kubeClient, customClient, DefaultThreadiness, signals.NewSignals().SetupSignalHandler())
+	if err != nil {
+		return nil, err
+	}
+
 	controllers["template"] = tpl
+	controllers["apply"] = aly
+	controllers["cluster"] = clt
 
 	return &Client{
 		ctx:          ctx,
@@ -87,4 +102,24 @@ func (c *Client) Run() {
 func (c *Client) Close() error {
 	c.Tomb.Kill(nil)
 	return c.Wait()
+}
+
+func isValidMetaObject(obj interface{}) bool {
+	object, ok := obj.(metaV1.Object)
+	if !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			utilRuntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
+			return false
+		}
+		object, ok = tombstone.Obj.(metaV1.Object)
+		if !ok {
+			utilRuntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
+			return false
+		}
+		klog.V(4).Infof("Recovered deleted object '%s' from tombstone", object.GetName())
+	}
+
+	klog.V(4).Infof("Processing object: %s", object.GetName())
+	return true
 }

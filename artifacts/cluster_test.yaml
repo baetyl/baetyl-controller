@@ -1,12 +1,13 @@
 apiVersion: baetyl.apis/v1alpha1
-kind: Template
+kind: Cluster
 metadata:
-  name: tpltest
+  name: clttest
   labels:
-    app: tpltest
+    app: clttest
 spec:
   userName: "zx"
   userId: "26"
+  coreFrequency: 20000
+  coreAPIPort: 8080
   description: test
-  isCluster: true
-  accelerator: "nvidia"
+  templateRef:

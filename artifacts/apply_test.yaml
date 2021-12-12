@@ -1,0 +1,15 @@
+apiVersion: baetyl.apis/v1alpha1
+kind: Apply
+metadata:
+  name: alytest
+  labels:
+    app: alytest
+spec:
+  userName: "zx"
+  userId: "26"
+  description: test
+  applyValues:
+    name: "default"
+    values:
+      v0: "k0"
+      v1: "k1"

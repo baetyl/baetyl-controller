@@ -32,8 +32,8 @@ func (c *FakeBaetylV1alpha1) Applies(namespace string) v1alpha1.ApplyInterface {
 	return &FakeApplies{c, namespace}
 }
 
-func (c *FakeBaetylV1alpha1) Nodes(namespace string) v1alpha1.NodeInterface {
-	return &FakeNodes{c, namespace}
+func (c *FakeBaetylV1alpha1) Clusters(namespace string) v1alpha1.ClusterInterface {
+	return &FakeClusters{c, namespace}
 }
 
 func (c *FakeBaetylV1alpha1) Templates(namespace string) v1alpha1.TemplateInterface {

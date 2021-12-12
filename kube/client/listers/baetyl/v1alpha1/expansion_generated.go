@@ -26,13 +26,13 @@ type ApplyListerExpansion interface{}
 // ApplyNamespaceLister.
 type ApplyNamespaceListerExpansion interface{}
 
-// NodeListerExpansion allows custom methods to be added to
-// NodeLister.
-type NodeListerExpansion interface{}
+// ClusterListerExpansion allows custom methods to be added to
+// ClusterLister.
+type ClusterListerExpansion interface{}
 
-// NodeNamespaceListerExpansion allows custom methods to be added to
-// NodeNamespaceLister.
-type NodeNamespaceListerExpansion interface{}
+// ClusterNamespaceListerExpansion allows custom methods to be added to
+// ClusterNamespaceLister.
+type ClusterNamespaceListerExpansion interface{}
 
 // TemplateListerExpansion allows custom methods to be added to
 // TemplateLister.

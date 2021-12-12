@@ -20,6 +20,6 @@ package v1alpha1
 
 type ApplyExpansion interface{}
 
-type NodeExpansion interface{}
+type ClusterExpansion interface{}
 
 type TemplateExpansion interface{}

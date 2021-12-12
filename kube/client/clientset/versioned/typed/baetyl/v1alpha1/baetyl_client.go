@@ -27,7 +27,7 @@ import (
 type BaetylV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	AppliesGetter
-	NodesGetter
+	ClustersGetter
 	TemplatesGetter
 }
 
@@ -40,8 +40,8 @@ func (c *BaetylV1alpha1Client) Applies(namespace string) ApplyInterface {
 	return newApplies(c, namespace)
 }
 
-func (c *BaetylV1alpha1Client) Nodes(namespace string) NodeInterface {
-	return newNodes(c, namespace)
+func (c *BaetylV1alpha1Client) Clusters(namespace string) ClusterInterface {
+	return newClusters(c, namespace)
 }
 
 func (c *BaetylV1alpha1Client) Templates(namespace string) TemplateInterface {

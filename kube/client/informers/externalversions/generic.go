@@ -55,8 +55,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=baetyl.apis, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("applies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Baetyl().V1alpha1().Applies().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("nodes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Baetyl().V1alpha1().Nodes().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("clusters"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Baetyl().V1alpha1().Clusters().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("templates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Baetyl().V1alpha1().Templates().Informer()}, nil
 
