@@ -116,28 +116,6 @@ func (c *ApplyClient) registerEventHandler() {
 			c.enqueueApply(newObj)
 		},
 	})
-
-	// Set up an event handler for other resources change. This
-	// handler will look up the owner of the given resource
-	// owned by an 'Apply' resource will enqueue that 'Apply' resource for
-	// processing. This way, we don't need to implement custom logic for
-	// handling 'Template' resources. More info on this pattern:
-	// https://github.com/kubernetes/community/blob/8cafef897a22026d42f5e5bb3f104febe7e29830/contributors/devel/controllers.md
-	c.templateInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: c.handleObject,
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			newTemplate := newObj.(*v1alpha1.Template)
-			oldTemplate := oldObj.(*v1alpha1.Template)
-			if newTemplate.ResourceVersion == oldTemplate.ResourceVersion {
-				// Periodic resync will send update events for all known Templates.
-				// Two different versions of the same Template will always have different RVs.
-				return
-			}
-			c.handleObject(newObj)
-		},
-		DeleteFunc: c.handleObject,
-	})
-
 }
 
 func (c *ApplyClient) Start() {
@@ -265,47 +243,6 @@ func (c *ApplyClient) syncHandler(key string) error {
 	//
 	//c.recorder.Event(tpl, coreV1.EventTypeNormal, ApplySuccessSynced, MessageApplySynced)
 	return nil
-}
-
-// handleObject will take any resource implementing metav1.Object and attempt
-// to find the 'Apply' resource that 'owns' it. It does this by looking at the
-// objects metadata.ownerReferences field for an appropriate OwnerReference.
-// It then enqueues that 'Apply' resource to be processed. If the object does not
-// have an appropriate OwnerReference, it will simply be skipped.
-//
-// 将任何实现 metav1.Object 的资源并尝试找到“拥有”它的 Apply 资源。
-// 它通过查看对象 metadata.ownerReferences 字段以获取适当的 OwnerReference 来完成此操作。
-// 然后将要处理的 Apply 资源加入队列。 如果对象没有合适的 OwnerReference，它将被跳过。
-func (c *ApplyClient) handleObject(obj interface{}) {
-	object, ok := obj.(metaV1.Object)
-	if !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			utilRuntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
-			return
-		}
-		object, ok = tombstone.Obj.(metaV1.Object)
-		if !ok {
-			utilRuntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
-			return
-		}
-		klog.V(4).Infof("Recovered deleted object '%s' from tombstone", object.GetName())
-	}
-
-	klog.V(4).Infof("Processing object: %s", object.GetName())
-	if ownerRef := metaV1.GetControllerOf(object); ownerRef != nil {
-		// If this object is not owned by a Foo, we should not do anything more with it.
-		if ownerRef.Kind != TemplateKind {
-			return
-		}
-		apply, err := c.applyLister.Applies(object.GetNamespace()).Get(ownerRef.Name)
-		if err != nil {
-			klog.V(4).Infof("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
-			return
-		}
-		c.enqueueApply(apply)
-		return
-	}
 }
 
 // enqueueApply takes a enqueueApply resource and converts
