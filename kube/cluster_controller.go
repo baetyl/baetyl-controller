@@ -247,13 +247,6 @@ func (c *ClusterClient) syncHandler(key string) error {
 		return err
 	}
 
-	if clt.Spec.TemplateRef == nil {
-		clt.Spec.TemplateRef = &coreV1.ObjectReference{
-			Kind:      TemplateKind,
-			Namespace: clt.Namespace,
-			Name:      clt.Name,
-		}
-	}
 	if clt.Spec.ApplyRef == nil {
 		clt.Spec.ApplyRef = &coreV1.ObjectReference{
 			Kind:      ApplyKind,
@@ -261,27 +254,46 @@ func (c *ClusterClient) syncHandler(key string) error {
 			Name:      clt.Name,
 		}
 	}
-
-	if clt.Spec.TemplateRef.Name == "" {
-		clt.Spec.TemplateRef.Kind = TemplateKind
-		clt.Spec.TemplateRef.Name = clt.Name
-		clt.Spec.TemplateRef.Namespace = clt.Namespace
-	}
 	if clt.Spec.ApplyRef.Name == "" {
 		clt.Spec.ApplyRef.Kind = ApplyKind
 		clt.Spec.ApplyRef.Name = clt.Name
 		clt.Spec.ApplyRef.Namespace = clt.Namespace
 	}
 
-	_, err = c.checkAndStartTemplate(clt)
-	if err != nil {
-		return err
+	if clt.Spec.TemplateRef == nil {
+		clt.Spec.TemplateRef = &coreV1.ObjectReference{
+			Kind:      TemplateKind,
+			Namespace: clt.Namespace,
+			Name:      clt.Name,
+		}
+	}
+	if clt.Spec.TemplateRef.Name == "" {
+		clt.Spec.TemplateRef.Kind = TemplateKind
+		clt.Spec.TemplateRef.Name = clt.Name
+		clt.Spec.TemplateRef.Namespace = clt.Namespace
 	}
 
-	_, err = c.checkAndStartApply(clt)
+	tpl, err := c.checkAndStartTemplate(clt)
 	if err != nil {
 		return err
 	}
+	clt.Spec.TemplateRef.Name = tpl.Name
+	clt.Spec.TemplateRef.Namespace = tpl.Namespace
+	clt.Spec.TemplateRef.Kind = tpl.Kind
+	clt.Spec.TemplateRef.UID = tpl.UID
+	clt.Spec.TemplateRef.APIVersion = tpl.APIVersion
+	clt.Spec.TemplateRef.ResourceVersion = tpl.ResourceVersion
+
+	aly, err := c.checkAndStartApply(clt)
+	if err != nil {
+		return err
+	}
+	clt.Spec.ApplyRef.Name = aly.Name
+	clt.Spec.ApplyRef.Namespace = aly.Namespace
+	clt.Spec.ApplyRef.Kind = aly.Kind
+	clt.Spec.ApplyRef.UID = aly.UID
+	clt.Spec.ApplyRef.APIVersion = aly.APIVersion
+	clt.Spec.ApplyRef.ResourceVersion = aly.ResourceVersion
 
 	klog.Info("cluster instance name:", clt.Name, " ,version:", clt.ObjectMeta.ResourceVersion)
 
@@ -295,20 +307,20 @@ func (c *ClusterClient) syncHandler(key string) error {
 	return nil
 }
 
-func (c *ClusterClient) checkAndStartTemplate(cluster *v1alpha1.Cluster) (*v1alpha1.Template, error) {
-	ns, name := cluster.GetNamespace(), cluster.Spec.TemplateRef.Name
+func (c *ClusterClient) checkAndStartTemplate(clt *v1alpha1.Cluster) (*v1alpha1.Template, error) {
+	ns, name := clt.GetNamespace(), clt.Spec.TemplateRef.Name
 	tpl, err := c.templateLister.Templates(ns).Get(name)
 	if apiErrors.IsNotFound(err) {
 		klog.Infof("template not exist, create a new template %s in namespace %s", name, ns)
 
 		// new Template
 		res := &v1alpha1.Template{
-			TypeMeta:   cluster.TypeMeta,
-			ObjectMeta: *cluster.ObjectMeta.DeepCopy(),
+			TypeMeta:   clt.TypeMeta,
+			ObjectMeta: *clt.ObjectMeta.DeepCopy(),
 			Spec: v1alpha1.TemplateSpec{
-				UserSpec:    *cluster.Spec.UserSpec.DeepCopy(),
-				ClusterRef:  &coreV1.LocalObjectReference{Name: cluster.Name},
-				ApplyRef:    &coreV1.LocalObjectReference{Name: cluster.Spec.ApplyRef.Name},
+				UserSpec:    *clt.Spec.UserSpec.DeepCopy(),
+				ClusterRef:  &coreV1.LocalObjectReference{Name: clt.Name},
+				ApplyRef:    &coreV1.LocalObjectReference{Name: clt.Spec.ApplyRef.Name},
 				Data:        map[string]string{},
 				Description: "",
 			},
@@ -316,9 +328,9 @@ func (c *ClusterClient) checkAndStartTemplate(cluster *v1alpha1.Cluster) (*v1alp
 		res.ResourceVersion = ""
 		res.UID = ""
 		res.OwnerReferences = []metaV1.OwnerReference{
-			*metaV1.NewControllerRef(cluster, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)),
+			*metaV1.NewControllerRef(clt, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)),
 		}
-		res.Labels["controller"] = cluster.Name
+		res.Labels["controller"] = clt.Name
 		tpl, err = c.customClient.BaetylV1alpha1().Templates(ns).Create(c.ctx, res, metaV1.CreateOptions{})
 	}
 	if err != nil {
@@ -327,20 +339,20 @@ func (c *ClusterClient) checkAndStartTemplate(cluster *v1alpha1.Cluster) (*v1alp
 	return tpl, nil
 }
 
-func (c *ClusterClient) checkAndStartApply(cluster *v1alpha1.Cluster) (*v1alpha1.Apply, error) {
-	ns, name := cluster.GetNamespace(), cluster.Spec.ApplyRef.Name
+func (c *ClusterClient) checkAndStartApply(clt *v1alpha1.Cluster) (*v1alpha1.Apply, error) {
+	ns, name := clt.GetNamespace(), clt.Spec.ApplyRef.Name
 	aly, err := c.applyLister.Applies(ns).Get(name)
 	if apiErrors.IsNotFound(err) {
 		klog.Infof("template not exist, create a new template %s in namespace %s", name, ns)
 
 		// new Template
 		res := &v1alpha1.Apply{
-			TypeMeta:   cluster.TypeMeta,
-			ObjectMeta: *cluster.ObjectMeta.DeepCopy(),
+			TypeMeta:   clt.TypeMeta,
+			ObjectMeta: *clt.ObjectMeta.DeepCopy(),
 			Spec: v1alpha1.ApplySpec{
-				UserSpec:     *cluster.Spec.UserSpec.DeepCopy(),
-				ClusterRef:   &coreV1.LocalObjectReference{Name: cluster.Name},
-				TemplatesRef: &coreV1.LocalObjectReference{Name: cluster.Spec.TemplateRef.Name},
+				UserSpec:     *clt.Spec.UserSpec.DeepCopy(),
+				ClusterRef:   &coreV1.LocalObjectReference{Name: clt.Name},
+				TemplatesRef: &coreV1.LocalObjectReference{Name: clt.Spec.TemplateRef.Name},
 				ApplyValues: []v1alpha1.ApplyValues{
 					{
 						Name:        DefaultValuesKey,
@@ -355,9 +367,9 @@ func (c *ClusterClient) checkAndStartApply(cluster *v1alpha1.Cluster) (*v1alpha1
 		res.ResourceVersion = ""
 		res.UID = ""
 		res.OwnerReferences = []metaV1.OwnerReference{
-			*metaV1.NewControllerRef(cluster, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)),
+			*metaV1.NewControllerRef(clt, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)),
 		}
-		res.Labels["controller"] = cluster.Name
+		res.Labels["controller"] = clt.Name
 		aly, err = c.customClient.BaetylV1alpha1().Applies(ns).Create(c.ctx, res, metaV1.CreateOptions{})
 	}
 	if err != nil {
