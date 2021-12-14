@@ -38,6 +38,14 @@ const (
 	MessageTemplateExists     = "Resource %q already exists and is not managed by Template"
 )
 
+type Template interface {
+	CreateTemplate(clt *v1alpha1.Template) (*v1alpha1.Template, error)
+	GetTemplate(ns, name string) (*v1alpha1.Template, error)
+	UpdateTemplate(clt *v1alpha1.Template) (*v1alpha1.Template, error)
+	DeleteTemplate(ns, name string) error
+	ListTemplates(ns string, selector labels.Selector) ([]*v1alpha1.Template, error)
+}
+
 type TemplateClient struct {
 	ctx         context.Context
 	threadiness int

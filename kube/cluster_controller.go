@@ -39,6 +39,14 @@ const (
 	MessageClusterExists     = "Resource %q already exists and is not managed by Cluster"
 )
 
+type Cluster interface {
+	CreateCluster(clt *v1alpha1.Cluster) (*v1alpha1.Cluster, error)
+	GetCluster(ns, name string) (*v1alpha1.Cluster, error)
+	UpdateCluster(clt *v1alpha1.Cluster) (*v1alpha1.Cluster, error)
+	DeleteCluster(ns, name string) error
+	ListClusters(ns string, selector labels.Selector) ([]*v1alpha1.Cluster, error)
+}
+
 type ClusterClient struct {
 	ctx         context.Context
 	threadiness int

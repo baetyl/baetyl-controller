@@ -3,6 +3,7 @@ package kube
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"gopkg.in/tomb.v2"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,12 +23,24 @@ const (
 	DefaultThreadiness = 2
 )
 
+type Client interface {
+	Run()
+	Cluster
+	Apply
+	Template
+	io.Closer
+}
+
 type Controller interface {
 	Start()
 	Run() error
 }
 
-type Client struct {
+type client struct {
+	Cluster
+	Apply
+	Template
+
 	ctx context.Context
 
 	kubeClient   kubernetes.Interface
@@ -37,7 +50,7 @@ type Client struct {
 	tomb.Tomb
 }
 
-func NewController(ctx context.Context, path string) (*Client, error) {
+func NewController(ctx context.Context, path string) (Client, error) {
 	var cfg Config
 	if err := utils.LoadYAML(path, &cfg); err != nil {
 		return nil, err
@@ -83,7 +96,11 @@ func NewController(ctx context.Context, path string) (*Client, error) {
 	controllers["apply"] = aly
 	controllers["cluster"] = clt
 
-	return &Client{
+	return &client{
+		Cluster:  clt,
+		Template: tpl,
+		Apply:    aly,
+
 		ctx:          ctx,
 		kubeClient:   kubeClient,
 		customClient: customClient,
@@ -91,7 +108,7 @@ func NewController(ctx context.Context, path string) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Run() {
+func (c *client) Run() {
 	for k, v := range c.controllers {
 		klog.Info("load controller", k)
 		v.Start()
@@ -99,7 +116,7 @@ func (c *Client) Run() {
 	}
 }
 
-func (c *Client) Close() error {
+func (c *client) Close() error {
 	c.Tomb.Kill(nil)
 	return c.Wait()
 }

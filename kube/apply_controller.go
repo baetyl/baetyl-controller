@@ -39,6 +39,14 @@ const (
 	MessageApplyExists     = "Resource %q already exists and is not managed by Apply"
 )
 
+type Apply interface {
+	CreateApply(clt *v1alpha1.Apply) (*v1alpha1.Apply, error)
+	GetApply(ns, name string) (*v1alpha1.Apply, error)
+	UpdateApply(clt *v1alpha1.Apply) (*v1alpha1.Apply, error)
+	DeleteApply(ns, name string) error
+	ListApplies(ns string, selector labels.Selector) ([]*v1alpha1.Apply, error)
+}
+
 type ApplyClient struct {
 	ctx         context.Context
 	threadiness int
