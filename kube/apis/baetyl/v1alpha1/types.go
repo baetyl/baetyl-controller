@@ -104,7 +104,7 @@ type ApplySpec struct {
 	UserSpec     `json:",inline"`
 	ClusterRef   *corev1.LocalObjectReference `json:"clusterRef,omitempty"`
 	TemplatesRef *corev1.LocalObjectReference `json:"templatesRef,omitempty"`
-	ApplyValues  []ApplyValues                `json:"applyValues,omitempty"`
+	ApplyValues  map[string]ApplyValues       `json:"applyValues,omitempty"`
 	Description  string                       `json:"description,omitempty"`
 }
 

@@ -131,11 +131,11 @@ func (c *ApplyClient) Start() {
 	c.customFactory.Start(c.stopCh)
 }
 
-// 启动controller
 // Run will set up the event handlers for types we are interested in, as well
 // as syncing informer caches and starting workers. It will block until stopCh
 // is closed, at which point it will shutdown the workqueue and wait for
 // workers to finish processing their current work items.
+// 启动controller
 func (c *ApplyClient) Run() error {
 	defer utilRuntime.HandleCrash()
 	defer c.workqueue.ShutDown()

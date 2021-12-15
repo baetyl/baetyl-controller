@@ -101,9 +101,9 @@ func (in *ApplySpec) DeepCopyInto(out *ApplySpec) {
 	}
 	if in.ApplyValues != nil {
 		in, out := &in.ApplyValues, &out.ApplyValues
-		*out = make([]ApplyValues, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = make(map[string]ApplyValues, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
 		}
 	}
 	return

@@ -145,11 +145,11 @@ func (c *ClusterClient) Start() {
 	c.customFactory.Start(c.stopCh)
 }
 
-// 启动controller
 // Run will set up the event handlers for types we are interested in, as well
 // as syncing informer caches and starting workers. It will block until stopCh
 // is closed, at which point it will shutdown the workqueue and wait for
 // workers to finish processing their current work items.
+// 启动controller
 func (c *ClusterClient) Run() error {
 	defer utilRuntime.HandleCrash()
 	defer c.workqueue.ShutDown()
@@ -338,11 +338,13 @@ func (c *ClusterClient) checkAndStartTemplate(clt *v1alpha1.Cluster) (*v1alpha1.
 		res.OwnerReferences = []metaV1.OwnerReference{
 			*metaV1.NewControllerRef(clt, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)),
 		}
-		res.Labels["controller"] = clt.Name
 		tpl, err = c.customClient.BaetylV1alpha1().Templates(ns).Create(c.ctx, res, metaV1.CreateOptions{})
 	}
 	if err != nil {
 		return nil, err
+	}
+	if !metaV1.IsControlledBy(tpl, clt) {
+		tpl.OwnerReferences = append(tpl.OwnerReferences, *metaV1.NewControllerRef(clt, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)))
 	}
 	return tpl, nil
 }
@@ -361,8 +363,8 @@ func (c *ClusterClient) checkAndStartApply(clt *v1alpha1.Cluster) (*v1alpha1.App
 				UserSpec:     *clt.Spec.UserSpec.DeepCopy(),
 				ClusterRef:   &coreV1.LocalObjectReference{Name: clt.Name},
 				TemplatesRef: &coreV1.LocalObjectReference{Name: clt.Spec.TemplateRef.Name},
-				ApplyValues: []v1alpha1.ApplyValues{
-					{
+				ApplyValues: map[string]v1alpha1.ApplyValues{
+					DefaultValuesKey: {
 						Name:        DefaultValuesKey,
 						Values:      map[string]string{},
 						ExpectTime:  0,
@@ -377,11 +379,13 @@ func (c *ClusterClient) checkAndStartApply(clt *v1alpha1.Cluster) (*v1alpha1.App
 		res.OwnerReferences = []metaV1.OwnerReference{
 			*metaV1.NewControllerRef(clt, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)),
 		}
-		res.Labels["controller"] = clt.Name
 		aly, err = c.customClient.BaetylV1alpha1().Applies(ns).Create(c.ctx, res, metaV1.CreateOptions{})
 	}
 	if err != nil {
 		return nil, err
+	}
+	if !metaV1.IsControlledBy(aly, clt) {
+		aly.OwnerReferences = append(aly.OwnerReferences, *metaV1.NewControllerRef(clt, v1alpha1.SchemeGroupVersion.WithKind(ClusterKind)))
 	}
 	return aly, nil
 }

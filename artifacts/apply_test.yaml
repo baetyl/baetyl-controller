@@ -9,7 +9,13 @@ spec:
   userId: "26"
   description: test
   applyValues:
-    name: "default"
-    values:
-      v0: "k0"
-      v1: "k1"
+    default:
+      name: "default"
+      values:
+        v0: "k0"
+        v1: "k1"
+    bml:
+      name: "bml"
+      values:
+        v0: "k2"
+        v1: "k3"
