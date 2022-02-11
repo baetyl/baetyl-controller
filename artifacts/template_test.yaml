@@ -1,0 +1,12 @@
+apiVersion: baetyl.apis/v1alpha1
+kind: Template
+metadata:
+  name: tpltest
+  labels:
+    app: tpltest
+spec:
+  userName: "zx"
+  userId: "26"
+  description: test
+  isCluster: true
+  accelerator: "nvidia"

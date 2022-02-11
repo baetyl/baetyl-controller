@@ -1,2 +1,9 @@
-# baetyl-controller
-baetyl v3 controller
+# beatyl-controller
+
+# How It Works
+## Architecture
+
+# quick start
+
+
+# Installation

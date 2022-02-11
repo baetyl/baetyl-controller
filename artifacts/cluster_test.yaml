@@ -1,0 +1,13 @@
+apiVersion: baetyl.apis/v1alpha1
+kind: Cluster
+metadata:
+  name: clttest
+  labels:
+    app: clttest
+spec:
+  userName: "zx"
+  userId: "26"
+  coreFrequency: 20000
+  coreAPIPort: 8080
+  description: test
+  templateRef:
